@@ -867,18 +867,18 @@
                 <!-- Formulario -->
                 <div class="contact-form">
                     <h3>Solicitar una Cotización</h3>
-                    <form action="#" method="POST" onsubmit="alert('¡Gracias por comunicarte con Voltes SpA! Te responderemos a la brevedad.'); return false;">
+                    <form action="https://formspree.io/f/mykrwblo" method="POST">
                         <div class="form-group">
                             <label for="name">Nombre / Empresa</label>
-                            <input type="text" id="name" class="form-control" placeholder="Ej. Constructora o Nombre Particular" required>
+                            <input type="text" id="name" name="Nombre" class="form-control" placeholder="Ej. Constructora o Nombre Particular" required>
                         </div>
                         <div class="form-group">
                             <label for="email">Correo Electrónico</label>
-                            <input type="email" id="email" class="form-control" placeholder="ejemplo@correo.com" required>
+                            <input type="email" id="email" name="Correo" class="form-control" placeholder="ejemplo@correo.com" required>
                         </div>
                         <div class="form-group">
                             <label for="subject">Tipo de Servicio requerido</label>
-                            <select id="subject" class="form-control">
+                            <select id="subject" name="Servicio" class="form-control" required>
                                 <option value="montaje">Instalación / Ingeniería Eléctrica</option>
                                 <option value="obras_civiles">Arquitectura y Obras Civiles</option>
                                 <option value="tramitacion">Planos, Aumentos de Potencia y TE-1</option>
@@ -890,7 +890,7 @@
                         </div>
                         <div class="form-group">
                             <label for="message">Mensaje / Detalles del Proyecto</label>
-                            <textarea id="message" class="form-control" placeholder="Describe brevemente los requerimientos técnicos, civiles o eléctricos de la obra..." required></textarea>
+                            <textarea id="message" name="Mensaje" class="form-control" placeholder="Describe brevemente los requerimientos técnicos, civiles o eléctricos de la obra..." required></textarea>
                         </div>
                         <button type="submit" class="btn btn-primary" style="width: 100%;">Enviar Mensaje</button>
                     </form>
