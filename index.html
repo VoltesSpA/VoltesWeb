@@ -877,6 +877,10 @@
                             <input type="email" id="email" name="Correo" class="form-control" placeholder="ejemplo@correo.com" required>
                         </div>
                         <div class="form-group">
+                            <label for="phone">Teléfono de Contacto</label>
+                            <input type="tel" id="phone" name="Teléfono" class="form-control" placeholder="+56 9 XXXX XXXX" required>
+                        </div>
+                        <div class="form-group">
                             <label for="subject">Tipo de Servicio requerido</label>
                             <select id="subject" name="Servicio" class="form-control" required>
                                 <option value="montaje">Instalación / Ingeniería Eléctrica</option>
@@ -972,7 +976,7 @@
 
             var data = new FormData(event.target);
 
-            // --- NUEVO: Generar Asunto Único Dinámico ---
+            // --- Generar Asunto Único Dinámico ---
             // Esto evita que Gmail agrupe los correos en un solo hilo
             var clienteNombre = document.getElementById("name").value;
             var fechaActual = new Date().toLocaleString('es-CL');
