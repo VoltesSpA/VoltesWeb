@@ -972,6 +972,12 @@
 
             var data = new FormData(event.target);
 
+            // --- NUEVO: Generar Asunto Único Dinámico ---
+            // Esto evita que Gmail agrupe los correos en un solo hilo
+            var clienteNombre = document.getElementById("name").value;
+            var fechaActual = new Date().toLocaleString('es-CL');
+            data.append('_subject', 'Cotización Web - ' + clienteNombre + ' [' + fechaActual + ']');
+
             fetch(event.target.action, {
                 method: form.method,
                 body: data,
