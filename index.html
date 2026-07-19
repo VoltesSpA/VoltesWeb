@@ -867,7 +867,7 @@
                 <!-- Formulario -->
                 <div class="contact-form">
                     <h3>Solicitar una Cotización</h3>
-                    <form action="https://formspree.io/f/mykrwblo" method="POST">
+                    <form id="contact-form" action="https://formspree.io/f/mykrwblo" method="POST">
                         <div class="form-group">
                             <label for="name">Nombre / Empresa</label>
                             <input type="text" id="name" name="Nombre" class="form-control" placeholder="Ej. Constructora o Nombre Particular" required>
@@ -893,6 +893,7 @@
                             <textarea id="message" name="Mensaje" class="form-control" placeholder="Describe brevemente los requerimientos técnicos, civiles o eléctricos de la obra..." required></textarea>
                         </div>
                         <button type="submit" class="btn btn-primary" style="width: 100%;">Enviar Mensaje</button>
+                        <p id="form-status" style="margin-top: 15px; font-weight: 600; text-align: center; display: none;"></p>
                     </form>
                 </div>
 
@@ -943,7 +944,7 @@
         <i class="fa-brands fa-whatsapp"></i>
     </a>
 
-    <!-- LÓGICA DE INTERACCIÓN MENÚ MÓVIL -->
+    <!-- LÓGICA DE INTERACCIÓN MENÚ MÓVIL Y ENVÍO AJAX -->
     <script>
         const mobileMenu = document.getElementById('mobile-menu');
         const navList = document.getElementById('nav-list');
@@ -956,6 +957,46 @@
         document.querySelectorAll('.nav-link').forEach(link => {
             link.addEventListener('click', () => {
                 navList.classList.remove('active');
+            });
+        });
+
+        // --- Lógica AJAX para enviar el formulario sin salir de la página ---
+        var form = document.getElementById("contact-form");
+        var statusMessage = document.getElementById("form-status");
+
+        form.addEventListener("submit", async function(event) {
+            event.preventDefault(); // Bloquea la redirección predeterminada
+            statusMessage.style.display = "block";
+            statusMessage.style.color = "var(--text-muted)";
+            statusMessage.innerHTML = "Enviando mensaje...";
+
+            var data = new FormData(event.target);
+
+            fetch(event.target.action, {
+                method: form.method,
+                body: data,
+                headers: {
+                    'Accept': 'application/json'
+                }
+            }).then(response => {
+                if (response.ok) {
+                    statusMessage.style.color = "#25d366"; // Verde éxito
+                    statusMessage.innerHTML = "¡Gracias! Tu mensaje ha sido enviado con éxito.";
+                    form.reset(); // Limpia el formulario
+                } else {
+                    response.json().then(data => {
+                        if (Object.hasOwn(data, 'errors')) {
+                            statusMessage.style.color = "red";
+                            statusMessage.innerHTML = data["errors"].map(error => error["message"]).join(", ");
+                        } else {
+                            statusMessage.style.color = "red";
+                            statusMessage.innerHTML = "Oops! Hubo un problema al enviar tu consulta.";
+                        }
+                    })
+                }
+            }).catch(error => {
+                statusMessage.style.color = "red";
+                statusMessage.innerHTML = "Oops! Hubo un problema de conexión al enviar.";
             });
         });
     </script>
