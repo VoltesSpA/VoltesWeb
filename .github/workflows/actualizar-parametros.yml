@@ -8,6 +8,11 @@
 #  Si algo no cuadra, no toca nada y el workflow falla, con lo que
 #  GitHub te envia un correo de aviso.
 #
+#  Ademas se mantiene vivo solo: GitHub desactiva los workflows
+#  programados de repositorios publicos tras 60 dias sin actividad, asi
+#  que el ultimo paso deja una señal si el repositorio lleva mucho
+#  tiempo quieto.
+#
 #  Ruta: .github/workflows/actualizar-parametros.yml
 # ═══════════════════════════════════════════════════════════════════════
 
@@ -58,3 +63,48 @@ jobs:
           git push
 
           echo "Publicado. Los ERP instalados y la web se actualizan en 24 h."
+
+      # ── MANTENERSE ACTIVO ──────────────────────────────────────────
+      # GitHub apaga los workflows programados de repositorios publicos
+      # cuando pasan 60 dias sin ningun commit. Este paso deja una señal
+      # si el repositorio lleva 45 dias quieto, con lo que el contador
+      # nunca llega a 60.
+      #
+      # Solo escribe cuando hace falta: si publicas cambios en la web o
+      # si hubo un reajuste legal, no hace nada. En la practica son unos
+      # pocos commits al año.
+      #
+      # Corre siempre (incluso si un paso anterior fallo) para que una
+      # falla persistente no termine desactivando el workflow y dejandote
+      # sin los correos de aviso.
+      - name: Mantener el workflow activo
+        if: always()
+        run: |
+          ULTIMO=$(git log -1 --format=%ct)
+          AHORA=$(date +%s)
+          DIAS=$(( (AHORA - ULTIMO) / 86400 ))
+          echo "Días desde el último commit: $DIAS"
+
+          if [ "$DIAS" -lt 45 ]; then
+            echo "El repositorio está activo. Quedan $(( 60 - DIAS )) días de margen."
+            exit 0
+          fi
+
+          echo "El repositorio lleva $DIAS días quieto. Dejando señal de actividad."
+          mkdir -p .github
+          {
+            echo "Señal de actividad del workflow de parámetros legales."
+            echo ""
+            echo "Este archivo existe solo para que GitHub no desactive la"
+            echo "revisión diaria por inactividad. No afecta al sitio web"
+            echo "ni al ERP."
+            echo ""
+            date -u +"Última señal: %Y-%m-%d %H:%M UTC"
+          } > .github/latido.txt
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .github/latido.txt
+          git commit -m "Mantener la revisión diaria activa [latido]"
+          git push
+          echo "Señal registrada. El contador de 60 días se reinició."
