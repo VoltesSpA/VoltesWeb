@@ -1,0 +1,383 @@
+#!/usr/bin/env python3
+# ═══════════════════════════════════════════════════════════════════════
+#  ACTUALIZADOR AUTOMATICO DE PARAMETROS LEGALES
+#
+#  Descarga el PDF mensual de Indicadores Previsionales de Previred,
+#  extrae el ingreso minimo y los topes imponibles, y actualiza
+#  parametros.json SOLO si detecta un cambio real y valido.
+#
+#  Se ejecuta desde GitHub Actions. Filosofia de diseño:
+#    - Ante cualquier duda, NO modifica nada.
+#    - Si el PDF cambia de formato, falla en voz alta (avisa por correo)
+#      en vez de escribir datos incorrectos.
+#    - Nunca borra entradas historicas: solo agrega.
+# ═══════════════════════════════════════════════════════════════════════
+
+import io
+import os
+import re
+import sys
+import json
+import datetime
+import urllib.request
+
+ARCHIVO = "parametros.json"
+TIMEOUT = 30
+
+MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+         "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+MES_NUM = {m.lower(): i + 1 for i, m in enumerate(MESES)}
+
+# Rangos de cordura. Un valor fuera de esto se descarta sin tocar nada.
+LIMITES = {
+    "imm":               (300_000, 3_000_000),
+    "tope_imponible_uf": (60.0, 200.0),
+    "tope_afc_uf":       (90.0, 300.0),
+}
+
+
+def log(msg):
+    print(msg, flush=True)
+
+
+# ─── Descarga del PDF ──────────────────────────────────────────────────
+
+def urls_candidatas(anio, mes):
+    """Previred no usa un nombre 100% constante: cambia mayusculas y a
+    veces agrega sufijos (v2, V2, -1). Se prueban las variantes conocidas."""
+    nombre = MESES[mes - 1]
+    base = "https://www.previred.com/wp-content/uploads"
+    variantes = []
+    for carpeta_mes in (f"{mes:02d}", f"{(mes % 12) + 1:02d}"):   # mes y mes siguiente
+        for nom in (nombre, nombre.lower()):
+            for suf in ("", "v2", "V2", "-1", "-V2", "v3"):
+                variantes.append(
+                    f"{base}/{anio}/{carpeta_mes}/"
+                    f"Indicadores-Previsionales-Previred-{nom}-{anio}{suf}.pdf")
+    # sin duplicados, conservando el orden
+    vistas, limpio = set(), []
+    for u in variantes:
+        if u not in vistas:
+            vistas.add(u)
+            limpio.append(u)
+    return limpio
+
+
+def descargar(url):
+    req = urllib.request.Request(url, headers={
+        "User-Agent": "Mozilla/5.0 (compatible; VoltesBot/1.0)"})
+    with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
+        if r.status != 200:
+            return None
+        return r.read()
+
+
+def texto_del_pdf(datos):
+    try:
+        import pdfplumber
+        with pdfplumber.open(io.BytesIO(datos)) as pdf:
+            return "\n".join((p.extract_text() or "") for p in pdf.pages)
+    except Exception:
+        pass
+    try:
+        from pypdf import PdfReader
+        lector = PdfReader(io.BytesIO(datos))
+        return "\n".join((p.extract_text() or "") for p in lector.pages)
+    except Exception as e:
+        log(f"  No se pudo leer el PDF: {e}")
+        return ""
+
+
+def obtener_texto_previred():
+    """Busca el PDF del mes actual; si no esta, prueba el mes anterior."""
+    hoy = datetime.date.today()
+    intentos = [(hoy.year, hoy.month)]
+    prev = hoy.replace(day=1) - datetime.timedelta(days=1)
+    intentos.append((prev.year, prev.month))
+
+    for anio, mes in intentos:
+        for url in urls_candidatas(anio, mes):
+            try:
+                datos = descargar(url)
+            except Exception:
+                continue
+            if not datos or len(datos) < 5000:
+                continue
+            texto = texto_del_pdf(datos)
+            if texto and "Indicadores Previsionales" in texto:
+                log(f"  PDF encontrado: {url}")
+                return texto, url, datetime.date(anio, mes, 1)
+    return "", "", None
+
+
+# ─── Extraccion de valores ─────────────────────────────────────────────
+
+def a_numero(txt):
+    if txt is None:
+        return None
+    s = str(txt).strip().replace("$", "").replace(" ", "").replace("\u00a0", "")
+    s = s.replace(".", "").replace(",", ".")
+    try:
+        return float(s)
+    except ValueError:
+        return None
+
+
+def a_uf(txt):
+    if txt is None:
+        return None
+    s = str(txt).strip().replace(" ", "").replace("\u00a0", "").replace(",", ".")
+    try:
+        return float(s)
+    except ValueError:
+        return None
+
+
+def extraer_imm(texto):
+    """Ingreso minimo de trabajadores dependientes."""
+    patrones = [
+        r"Sueldo\s+M[ií]nimo\s+Trab\.?\s+Dependientes\s+e\s+Independientes\s*:?\s*\$?\s*([\d.,]+)",
+        r"Trabajadores?\s+Dependientes\s+e\s+Independientes\s*:?\s*\$?\s*([\d.,]+)",
+        r"Nuevo\s+ingreso\s+m[ií]nimo\s+mensual\s*:?.{0,80}?\$?\s*([\d.]{7,10})",
+        r"Trabajadores\s+Dependientes\s*\$?\s*([\d.]{7,10})",
+    ]
+    for p in patrones:
+        m = re.search(p, texto, re.I | re.S)
+        if m:
+            v = a_numero(m.group(1))
+            if v and LIMITES["imm"][0] <= v <= LIMITES["imm"][1]:
+                return int(v)
+    return None
+
+
+def extraer_tope_afp(texto):
+    """Tope imponible de AFP y salud, en UF."""
+    patrones = [
+        r"afiliados?\s+a\s+una\s+AFP\s*\(\s*([\d.,]+)\s*UF\s*\)",
+        r"Para\s+Afiliados?\s+AFP\s*:?\s*([\d.,]+)\s*UF",
+        r"Tope\s+imponible.{0,60}?AFP\s*:?\s*([\d.,]+)\s*UF",
+    ]
+    for p in patrones:
+        m = re.search(p, texto, re.I | re.S)
+        if m:
+            v = a_uf(m.group(1))
+            if v and LIMITES["tope_imponible_uf"][0] <= v <= LIMITES["tope_imponible_uf"][1]:
+                return v
+    return None
+
+
+def extraer_tope_afc(texto):
+    """Tope imponible del seguro de cesantia, en UF."""
+    patrones = [
+        r"Seguro\s+de\s+Cesant[ií]a\s*\(\s*([\d.,]+)\s*UF\s*\)",
+        r"Para\s+Seguro\s+de\s+Cesant[ií]a\s*:?\s*([\d.,]+)\s*UF",
+    ]
+    for p in patrones:
+        m = re.search(p, texto, re.I | re.S)
+        if m:
+            v = a_uf(m.group(1))
+            if v and LIMITES["tope_afc_uf"][0] <= v <= LIMITES["tope_afc_uf"][1]:
+                return v
+    return None
+
+
+def extraer_vigencia(texto, fallback):
+    """Busca 'aplican desde las remuneraciones <mes> <anio>'.
+
+    Es el dato mas delicado: define desde cuando rige el monto nuevo."""
+    m = re.search(
+        r"aplican\s+desde\s+las?\s+remuneraciones?\s+([a-záéíóú]+)\s*(\d{4})",
+        texto, re.I)
+    if m:
+        mes = MES_NUM.get(m.group(1).lower())
+        if mes:
+            return datetime.date(int(m.group(2)), mes, 1), True
+    return fallback, False
+
+
+# ─── Verificaciones cruzadas ───────────────────────────────────────────
+#  Sin revision humana, el rango por si solo no basta: dentro del mismo
+#  PDF hay varios montos plausibles (casa particular, menores de 18,
+#  fines no remuneracionales). Estas comprobaciones descartan que se
+#  haya tomado el numero equivocado.
+
+def verificar_imm(texto, valor, anterior):
+    """Confirma que el IMM extraido es el de trabajadores dependientes."""
+    fallas = []
+
+    # 1) El sueldo minimo en Chile nunca baja
+    if anterior and valor < anterior:
+        fallas.append(f"el IMM bajaria de {anterior} a {valor}")
+
+    # 2) Un alza sobre 25% no ha ocurrido nunca; seria un error de lectura
+    if anterior and valor > anterior * 1.25:
+        fallas.append(f"alza irreal: {anterior} -> {valor}")
+
+    # 3) NO debe coincidir con los otros minimos del mismo PDF
+    otros = {
+        "menores de 18 / mayores de 65":
+            r"Menores\s+de\s+18\s+y\s+Mayores\s+de\s+65[^$]{0,30}\$?\s*([\d.]+)",
+        "fines no remuneracionales":
+            r"[Ff]ines\s+no\s+[Rr]emuneracionales\s*:?\s*\$?\s*([\d.]+)",
+    }
+    for etiqueta, patron in otros.items():
+        m = re.search(patron, texto, re.I)
+        if m:
+            v = a_numero(m.group(1))
+            if v and abs(v - valor) < 1:
+                fallas.append(f"el valor coincide con el minimo de {etiqueta}")
+
+    # 4) Debe aparecer junto a la palabra "Dependientes"
+    cerca = re.search(
+        r"Dependientes[^$\n]{0,60}\$?\s*" + re.escape(f"{valor:,}".replace(",", ".")),
+        texto, re.I)
+    if not cerca:
+        # tolerante: puede venir sin separadores de miles
+        cerca = re.search(r"Dependientes[^$\n]{0,60}\$?\s*" + str(valor), texto, re.I)
+    if not cerca:
+        fallas.append("no aparece asociado a 'Dependientes'")
+
+    return fallas
+
+
+def verificar_tope(nombre, valor, anterior, subida_max=1.20):
+    """Los topes imponibles suben cada año; nunca bajan."""
+    fallas = []
+    if anterior:
+        if valor < anterior:
+            fallas.append(f"{nombre} bajaria de {anterior} a {valor} UF")
+        if valor > anterior * subida_max:
+            fallas.append(f"{nombre} sube demasiado: {anterior} -> {valor} UF")
+    return fallas
+
+
+# ─── Comparacion y actualizacion ───────────────────────────────────────
+
+def vigente(lista, clave):
+    if not lista:
+        return None
+    hoy = datetime.date.today().isoformat()
+    actual = None
+    for it in lista:
+        if it.get("desde", "") <= hoy:
+            actual = it
+    return (actual or lista[-1]).get(clave)
+
+
+def main():
+    if not os.path.exists(ARCHIVO):
+        log(f"ERROR: no existe {ARCHIVO}")
+        return 1
+
+    with open(ARCHIVO, encoding="utf-8") as f:
+        p = json.load(f)
+
+    log("Buscando el PDF de indicadores de Previred...")
+    texto, url, mes_pdf = obtener_texto_previred()
+    if not texto:
+        log("ERROR: no se encontro ningun PDF de Previred.")
+        log("       Puede que cambiaran la URL. Revisar manualmente.")
+        return 2
+
+    imm_pdf = extraer_imm(texto)
+    afp_pdf = extraer_tope_afp(texto)
+    afc_pdf = extraer_tope_afc(texto)
+
+    log(f"  IMM leido      : {imm_pdf}")
+    log(f"  Tope AFP leido : {afp_pdf}")
+    log(f"  Tope AFC leido : {afc_pdf}")
+
+    if imm_pdf is None and afp_pdf is None and afc_pdf is None:
+        log("ERROR: no se pudo extraer ningun valor. El PDF cambio de formato.")
+        return 3
+
+    desde, desde_seguro = extraer_vigencia(texto, mes_pdf)
+    log(f"  Vigencia       : {desde} ({'del PDF' if desde_seguro else 'estimada'})")
+
+    cambios, rechazos = [], []
+
+    imm_actual = vigente(p["imm"], "monto")
+    afp_actual = vigente(p["tope_imponible_uf"], "valor")
+    afc_actual = vigente(p["tope_afc_uf"], "valor")
+
+    # ── IMM ──────────────────────────────────────────────────────────
+    if imm_pdf is not None and imm_pdf != imm_actual:
+        fallas = verificar_imm(texto, imm_pdf, imm_actual)
+        if fallas:
+            rechazos.append(f"IMM {imm_pdf}: " + "; ".join(fallas))
+        elif not desde_seguro:
+            rechazos.append(
+                f"IMM {imm_pdf}: no se pudo leer la fecha de vigencia en el PDF")
+        elif any(e["desde"] == desde.isoformat() for e in p["imm"]):
+            log("  IMM: ya existe una entrada con esa fecha, se omite.")
+        else:
+            p["imm"].append({"desde": desde.isoformat(), "monto": imm_pdf,
+                             "ley": "auto/previred"})
+            p["imm"].sort(key=lambda e: e["desde"])
+            cambios.append(f"IMM: {imm_actual} -> {imm_pdf} desde {desde}")
+
+    # ── Tope AFP / salud ─────────────────────────────────────────────
+    if afp_pdf is not None and afp_pdf != afp_actual:
+        fallas = verificar_tope("tope AFP/salud", afp_pdf, afp_actual)
+        if fallas:
+            rechazos.append("; ".join(fallas))
+        else:
+            d = datetime.date(desde.year, 2, 1)   # los topes rigen desde febrero
+            if not any(e["desde"] == d.isoformat() for e in p["tope_imponible_uf"]):
+                p["tope_imponible_uf"].append({"desde": d.isoformat(), "valor": afp_pdf})
+                p["tope_imponible_uf"].sort(key=lambda e: e["desde"])
+                cambios.append(f"Tope AFP/salud: {afp_actual} -> {afp_pdf} UF desde {d}")
+
+    # ── Tope AFC ─────────────────────────────────────────────────────
+    if afc_pdf is not None and afc_pdf != afc_actual:
+        fallas = verificar_tope("tope cesantia", afc_pdf, afc_actual)
+        if fallas:
+            rechazos.append("; ".join(fallas))
+        else:
+            d = datetime.date(desde.year, 2, 1)
+            if not any(e["desde"] == d.isoformat() for e in p["tope_afc_uf"]):
+                p["tope_afc_uf"].append({"desde": d.isoformat(), "valor": afc_pdf})
+                p["tope_afc_uf"].sort(key=lambda e: e["desde"])
+                cambios.append(f"Tope cesantia: {afc_actual} -> {afc_pdf} UF desde {d}")
+
+    # Si algo no paso las verificaciones, NO se publica nada y se avisa
+    if rechazos:
+        log("\nVALORES RECHAZADOS POR LAS VERIFICACIONES:")
+        for r in rechazos:
+            log(f"  - {r}")
+        log("\nNo se modifico el archivo. Revisar el PDF a mano:")
+        log(f"  {url}")
+        return 4
+
+    if not cambios:
+        log("\nSin cambios: los parametros ya estan al dia.")
+        return 0
+
+    # ── Guardar ──────────────────────────────────────────────────────
+    p["version"] = int(p.get("version", 0)) + 1
+    p["actualizado"] = datetime.date.today().isoformat()
+
+    with open(ARCHIVO, "w", encoding="utf-8") as f:
+        json.dump(p, f, indent=2, ensure_ascii=False)
+        f.write("\n")
+
+    log("\nCAMBIOS APLICADOS:")
+    for c in cambios:
+        log(f"  - {c}")
+    log(f"  Version {p['version']}  |  Fuente: {url}")
+
+    # Resumen para el cuerpo del Pull Request
+    resumen = os.environ.get("GITHUB_OUTPUT")
+    if resumen:
+        cuerpo = ("Actualizacion automatica desde Previred.\\n\\n"
+                  + "\\n".join(f"- {c}" for c in cambios)
+                  + f"\\n\\nFuente: {url}")
+        with open(resumen, "a", encoding="utf-8") as f:
+            f.write("hay_cambios=true\n")
+            f.write(f"resumen={cuerpo}\n")
+            f.write(f"version={p['version']}\n")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
