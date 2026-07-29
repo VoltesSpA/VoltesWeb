@@ -685,6 +685,98 @@
                 padding: 15px 30px;
             }
         }
+
+        /* --- SECCIÓN INDICADORES VIGENTES --- */
+        .indicadores {
+            padding: 80px 0;
+            background-color: var(--light-bg);
+        }
+
+        .indicadores-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+
+        .indicadores-header .section-title {
+            margin-bottom: 0;
+        }
+
+        .indicadores-fecha {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .indicadores-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 25px;
+        }
+
+        .indicador-card {
+            background-color: var(--white);
+            border-radius: 10px;
+            padding: 28px 22px;
+            text-align: center;
+            border-top: 4px solid var(--primary);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+            transition: var(--transition);
+        }
+
+        .indicador-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .indicador-card .ind-icono {
+            font-size: 1.6rem;
+            color: var(--primary);
+            margin-bottom: 12px;
+        }
+
+        .indicador-card .ind-nombre {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .indicador-card .ind-valor {
+            font-size: 1.7rem;
+            font-weight: 800;
+            color: var(--dark-main);
+            line-height: 1.2;
+        }
+
+        .indicador-card .ind-detalle {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+
+        .indicadores-nota {
+            margin-top: 30px;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            text-align: center;
+            line-height: 1.7;
+        }
+
+        @media (max-width: 768px) {
+            .indicadores-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 15px;
+            }
+            .indicador-card { padding: 20px 15px; }
+            .indicador-card .ind-valor { font-size: 1.35rem; }
+        }
+
     </style>
 </head>
 <body>
@@ -702,6 +794,7 @@
                 <li><a href="#" class="nav-link">Inicio</a></li>
                 <li><a href="#nosotros" class="nav-link">Nosotros</a></li>
                 <li><a href="#servicios" class="nav-link">Servicios</a></li>
+                <li><a href="#indicadores" class="nav-link">Indicadores</a></li>
                 <li><a href="#contacto" class="nav-link">Contacto</a></li>
                 <li><a href="https://wa.me/56988981419" target="_blank" class="nav-cta"><i class="fa-brands fa-whatsapp"></i> Cotizar</a></li>
             </ul>
@@ -817,6 +910,59 @@
                 </div>
 
             </div>
+        </div>
+    </section>
+
+    <!-- SECCIÓN INDICADORES VIGENTES -->
+    <section class="indicadores" id="indicadores">
+        <div class="container">
+            <div class="indicadores-header">
+                <h2 class="section-title">Indicadores Vigentes</h2>
+                <span class="indicadores-fecha" id="ind-fecha">Cargando…</span>
+            </div>
+
+            <div class="indicadores-grid">
+                <div class="indicador-card">
+                    <div class="ind-icono"><i class="fa-solid fa-chart-line"></i></div>
+                    <div class="ind-nombre">Valor UF</div>
+                    <div class="ind-valor" id="ind-uf">—</div>
+                    <div class="ind-detalle">Unidad de Fomento</div>
+                </div>
+
+                <div class="indicador-card">
+                    <div class="ind-icono"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+                    <div class="ind-nombre">Valor UTM</div>
+                    <div class="ind-valor" id="ind-utm">—</div>
+                    <div class="ind-detalle">Unidad Tributaria Mensual</div>
+                </div>
+
+                <div class="indicador-card">
+                    <div class="ind-icono"><i class="fa-solid fa-sack-dollar"></i></div>
+                    <div class="ind-nombre">Sueldo Mínimo</div>
+                    <div class="ind-valor" id="ind-imm">—</div>
+                    <div class="ind-detalle" id="ind-imm-det">Ingreso Mínimo Mensual</div>
+                </div>
+
+                <div class="indicador-card">
+                    <div class="ind-icono"><i class="fa-solid fa-shield-halved"></i></div>
+                    <div class="ind-nombre">Tope Imponible</div>
+                    <div class="ind-valor" id="ind-tope">—</div>
+                    <div class="ind-detalle">AFP y salud</div>
+                </div>
+
+                <div class="indicador-card">
+                    <div class="ind-icono"><i class="fa-solid fa-clock"></i></div>
+                    <div class="ind-nombre">Jornada Legal</div>
+                    <div class="ind-valor" id="ind-jornada">—</div>
+                    <div class="ind-detalle" id="ind-jornada-det">Horas semanales</div>
+                </div>
+            </div>
+
+            <p class="indicadores-nota">
+                UF y UTM obtenidas de mindicador.cl. Parámetros legales según la
+                normativa vigente en Chile.<br>
+                Información de referencia; ante cualquier duda consulte la fuente oficial.
+            </p>
         </div>
     </section>
 
@@ -1021,5 +1167,64 @@
             });
         });
     </script>
+    <!-- SCRIPT: CARGA DE INDICADORES VIGENTES -->
+    <script>
+    (function () {
+        "use strict";
+
+        const peso = n => "$ " + Math.round(n).toLocaleString("es-CL");
+        const set  = (id, txt) => { const e = document.getElementById(id); if (e) e.textContent = txt; };
+
+        // Devuelve la entrada de la tabla que rige HOY
+        function vigente(lista) {
+            if (!Array.isArray(lista) || !lista.length) return null;
+            const hoy = new Date().toISOString().slice(0, 10);
+            let elegida = null;
+            for (const item of lista) {
+                if (item && item.desde && item.desde <= hoy) elegida = item;
+            }
+            return elegida || lista[0];
+        }
+
+        // Parámetros legales: mismo dominio, sin problemas de CORS
+        fetch("/parametros.json?t=" + Date.now(), { cache: "no-store" })
+            .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+            .then(p => {
+                const imm = vigente(p.imm);
+                if (imm) {
+                    set("ind-imm", peso(imm.monto));
+                    const d = new Date(imm.desde + "T00:00:00");
+                    set("ind-imm-det", "Vigente desde " +
+                        d.toLocaleDateString("es-CL", { month: "long", year: "numeric" }));
+                }
+
+                const tope = vigente(p.tope_imponible_uf);
+                if (tope) set("ind-tope", tope.valor + " UF");
+
+                const jor = vigente(p.jornada);
+                if (jor) {
+                    set("ind-jornada", jor.horas + " hrs");
+                    set("ind-jornada-det", "Semanales · Ley 21.561");
+                }
+
+                if (p.actualizado) {
+                    const d = new Date(p.actualizado + "T00:00:00");
+                    set("ind-fecha", "Actualizado el " +
+                        d.toLocaleDateString("es-CL", { day: "numeric", month: "long", year: "numeric" }));
+                }
+            })
+            .catch(() => set("ind-fecha", "No se pudieron cargar los parámetros"));
+
+        // UF y UTM del día
+        fetch("https://mindicador.cl/api")
+            .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+            .then(d => {
+                if (d.uf  && d.uf.valor)  set("ind-uf",  peso(d.uf.valor));
+                if (d.utm && d.utm.valor) set("ind-utm", peso(d.utm.valor));
+            })
+            .catch(() => { /* sin conexión: quedan los guiones */ });
+    })();
+    </script>
+
 </body>
 </html>
