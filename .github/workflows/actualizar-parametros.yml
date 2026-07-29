@@ -1,0 +1,60 @@
+# ═══════════════════════════════════════════════════════════════════════
+#  ACTUALIZACION AUTOMATICA DE PARAMETROS LEGALES
+#
+#  Revisa a diario el PDF de Indicadores Previsionales de Previred.
+#  Si detecta un cambio en el ingreso minimo o en los topes imponibles,
+#  y ese cambio pasa TODAS las verificaciones cruzadas, lo publica solo.
+#
+#  Si algo no cuadra, no toca nada y el workflow falla, con lo que
+#  GitHub te envia un correo de aviso.
+#
+#  Ruta: .github/workflows/actualizar-parametros.yml
+# ═══════════════════════════════════════════════════════════════════════
+
+name: Actualizar parámetros legales
+
+on:
+  schedule:
+    # Todos los días a las 12:00 UTC (09:00 en Chile continental)
+    - cron: "0 12 * * *"
+  workflow_dispatch:        # permite ejecutarlo a mano desde la pestaña Actions
+
+permissions:
+  contents: write
+
+jobs:
+  revisar:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar el repositorio
+        uses: actions/checkout@v4
+
+      - name: Preparar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar dependencias
+        run: pip install pdfplumber pypdf
+
+      - name: Revisar Previred y actualizar si corresponde
+        run: python scripts/actualizar_parametros.py
+
+      - name: Publicar los cambios
+        run: |
+          if git diff --quiet parametros.json; then
+            echo "Sin cambios: los parámetros ya estaban al día."
+            exit 0
+          fi
+
+          echo "Cambios detectados:"
+          git diff parametros.json
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add parametros.json
+          git commit -m "Actualizar parámetros legales desde Previred [automatico]"
+          git push
+
+          echo "Publicado. Los ERP instalados y la web se actualizan en 24 h."
