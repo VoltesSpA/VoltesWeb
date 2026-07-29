@@ -136,10 +136,14 @@ def a_uf(txt):
 def extraer_imm(texto):
     """Ingreso minimo de trabajadores dependientes."""
     patrones = [
+        # Formato en prosa (meses con anuncio de cambio)
         r"Sueldo\s+M[ií]nimo\s+Trab\.?\s+Dependientes\s+e\s+Independientes\s*:?\s*\$?\s*([\d.,]+)",
         r"Trabajadores?\s+Dependientes\s+e\s+Independientes\s*:?\s*\$?\s*([\d.,]+)",
         r"Nuevo\s+ingreso\s+m[ií]nimo\s+mensual\s*:?.{0,80}?\$?\s*([\d.]{7,10})",
         r"Trabajadores\s+Dependientes\s*\$?\s*([\d.]{7,10})",
+        # Formato de tabla: el monto puede venir mas abajo, en otra columna
+        r"Dependientes\s+e\s+Independientes\s*:?[^\d$]{0,200}?\$\s*([\d.]{7,10})",
+        r"Trab\.?\s+Dependientes[^\d$]{0,200}?\$\s*([\d.]{7,10})",
     ]
     for p in patrones:
         m = re.search(p, texto, re.I | re.S)
@@ -179,6 +183,27 @@ def extraer_tope_afc(texto):
             if v and LIMITES["tope_afc_uf"][0] <= v <= LIMITES["tope_afc_uf"][1]:
                 return v
     return None
+
+
+def pdf_anuncia_cambio(texto):
+    """True si este PDF trae un anuncio de cambio del ingreso minimo.
+
+    Previred usa dos formatos distintos:
+      - Meses CON cambio: bloque "IMPORTANTE" con los montos en prosa,
+        del estilo "Sueldo Minimo Trab. Dependientes...: $ 553.553".
+      - Meses normales: tabla de dos columnas donde la etiqueta queda
+        separada del monto, por lo que no se puede leer con expresiones
+        regulares simples.
+
+    Solo interesa leer el IMM en los meses que anuncian cambio: si no hay
+    anuncio, es porque el monto sigue igual y no hay nada que detectar."""
+    señales = [
+        r"aplican\s+desde\s+las?\s+remuneraciones?",
+        r"[Nn]uevo\s+[Ii]ngreso\s+[Mm][ií]nimo",
+        r"nuevos\s+valores\s+para\s+ingreso",
+        r"se\s+public[oó]\s+en\s+el\s+Diario\s+Oficial",
+    ]
+    return any(re.search(p, texto, re.I) for p in señales)
 
 
 def extraer_vigencia(texto, fallback):
@@ -283,13 +308,29 @@ def main():
     afp_pdf = extraer_tope_afp(texto)
     afc_pdf = extraer_tope_afc(texto)
 
+    anuncia = pdf_anuncia_cambio(texto)
+
     log(f"  IMM leido      : {imm_pdf}")
     log(f"  Tope AFP leido : {afp_pdf}")
     log(f"  Tope AFC leido : {afc_pdf}")
+    log(f"  Anuncia cambio : {'SI' if anuncia else 'no'}")
 
-    if imm_pdf is None and afp_pdf is None and afc_pdf is None:
-        log("ERROR: no se pudo extraer ningun valor. El PDF cambio de formato.")
+    if afp_pdf is None and afc_pdf is None:
+        log("ERROR: no se pudieron leer los topes imponibles.")
+        log("       El PDF cambio de formato. Revisar el script.")
         return 3
+
+    # El IMM solo se puede leer cuando el PDF trae el bloque de anuncio.
+    # En los meses normales viene en una tabla de dos columnas y queda
+    # ilegible, pero eso no importa: si no hay anuncio, no hay cambio.
+    if imm_pdf is None:
+        if anuncia:
+            log("\nERROR: el PDF ANUNCIA un cambio de ingreso minimo pero no se")
+            log("       pudo leer el monto. Esto si es un problema: podria estar")
+            log("       pasando por alto un reajuste.")
+            log(f"       Revisar a mano: {url}")
+            return 5
+        log("  (mes sin anuncio de cambio: el IMM no aparece legible, es normal)")
 
     desde, desde_seguro = extraer_vigencia(texto, mes_pdf)
     log(f"  Vigencia       : {desde} ({'del PDF' if desde_seguro else 'estimada'})")
