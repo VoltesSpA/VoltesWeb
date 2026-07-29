@@ -1,0 +1,98 @@
+{
+  "_comentario": "Parametros legales de nomina de Chile. Al publicar este archivo, todas las instalaciones de Voltes ERP se actualizan solas dentro de las 24 horas siguientes. Suba la 'version' en cada cambio.",
+  "version": 1,
+  "actualizado": "2026-07-29",
+  "_aviso": "Mensaje opcional que se muestra a TODAS las instalaciones en Configuracion. Dejar en blanco si no hay nada que comunicar.",
+  "aviso": "",
+  "_imm": "Ingreso Minimo Mensual. Lo fija el Congreso por ley. 'desde' es la fecha en que EMPIEZA A REGIR, no la de publicacion de la ley.",
+  "imm": [
+    {
+      "desde": "2023-05-01",
+      "monto": 440000,
+      "ley": "21.456"
+    },
+    {
+      "desde": "2023-09-01",
+      "monto": 460000,
+      "ley": "21.456"
+    },
+    {
+      "desde": "2024-07-01",
+      "monto": 500000,
+      "ley": "21.578"
+    },
+    {
+      "desde": "2025-01-01",
+      "monto": 510636,
+      "ley": "reajuste IPC"
+    },
+    {
+      "desde": "2025-05-01",
+      "monto": 529000,
+      "ley": "21.751"
+    },
+    {
+      "desde": "2026-01-01",
+      "monto": 539000,
+      "ley": "21.751"
+    },
+    {
+      "desde": "2026-05-01",
+      "monto": 553553,
+      "ley": "21.830"
+    }
+  ],
+  "_tope_imponible_uf": "Tope de AFP, salud y ley de accidentes, en UF. Lo fija la Superintendencia de Pensiones cada año (rige desde las remuneraciones de febrero).",
+  "tope_imponible_uf": [
+    {
+      "desde": "2024-01-01",
+      "valor": 84.3
+    },
+    {
+      "desde": "2025-01-01",
+      "valor": 87.8
+    },
+    {
+      "desde": "2026-02-01",
+      "valor": 90.0
+    }
+  ],
+  "_tope_afc_uf": "Tope propio del seguro de cesantia, en UF. Mas alto que el previsional.",
+  "tope_afc_uf": [
+    {
+      "desde": "2024-01-01",
+      "valor": 126.6
+    },
+    {
+      "desde": "2025-01-01",
+      "valor": 131.9
+    },
+    {
+      "desde": "2026-02-01",
+      "valor": 135.2
+    }
+  ],
+  "_jornada": "Jornada ordinaria semanal y factor de hora extra con recargo 50% (Ley 21.561). factor = 1,5 / (horas x 30 / 7)",
+  "jornada": [
+    {
+      "desde": "2023-01-01",
+      "horas": 45,
+      "factor_he": 0.0077778
+    },
+    {
+      "desde": "2024-04-26",
+      "horas": 44,
+      "factor_he": 0.0079545
+    },
+    {
+      "desde": "2026-04-26",
+      "horas": 42,
+      "factor_he": 0.0083333
+    },
+    {
+      "desde": "2028-04-26",
+      "horas": 40,
+      "factor_he": 0.00875
+    }
+  ]
+}
