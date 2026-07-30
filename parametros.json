@@ -1,6 +1,6 @@
 {
   "_comentario": "Parametros legales de nomina de Chile. Al publicar este archivo, todas las instalaciones de Voltes ERP se actualizan solas dentro de las 24 horas siguientes. Suba la 'version' en cada cambio.",
-  "version": 1,
+  "version": 2,
   "actualizado": "2026-07-29",
   "_aviso": "Mensaje opcional que se muestra a TODAS las instalaciones en Configuracion. Dejar en blanco si no hay nada que comunicar.",
   "aviso": "",
@@ -93,6 +93,29 @@
       "desde": "2028-04-26",
       "horas": 40,
       "factor_he": 0.00875
+    }
+  ],
+  "_sis": "Tasa del Seguro de Invalidez y Sobrevivencia, de cargo del empleador. Se fija por licitacion publica y cambia VARIAS VECES AL AÑO, tanto al alza como a la baja. Rige desde el mes de la REMUNERACION, no del pago. Fuente: Previred / Superintendencia de Pensiones. No confundir con la cotizacion de Trabajo Pesado (2% R.I.), que es otra cosa.",
+  "sis": [
+    {
+      "desde": "2025-01-01",
+      "valor": 1.38
+    },
+    {
+      "desde": "2025-04-01",
+      "valor": 1.78
+    },
+    {
+      "desde": "2026-01-01",
+      "valor": 1.54
+    },
+    {
+      "desde": "2026-04-01",
+      "valor": 1.62
+    },
+    {
+      "desde": "2026-07-01",
+      "valor": 2.0
     }
   ]
 }
