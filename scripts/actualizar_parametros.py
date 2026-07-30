@@ -33,6 +33,7 @@ LIMITES = {
     "imm":               (300_000, 3_000_000),
     "tope_imponible_uf": (60.0, 200.0),
     "tope_afc_uf":       (90.0, 300.0),
+    "sis":               (0.3, 6.0),
 }
 
 
@@ -206,6 +207,48 @@ def pdf_anuncia_cambio(texto):
     return any(re.search(p, texto, re.I) for p in señales)
 
 
+def mes_remuneraciones(texto, fallback):
+    """Mes de remuneraciones que cubre el PDF.
+
+    El encabezado dice, por ejemplo:
+      "Para Cotizaciones a Pagar en Agosto 2026 (Remuneraciones Julio 2026)"
+    El SIS rige desde el mes de las REMUNERACIONES (julio), no desde el
+    mes en que se paga (agosto)."""
+    m = re.search(r"Remuneraciones\s+([a-záéíóú]+)\s*(?:de\s+)?(\d{4})", texto, re.I)
+    if m:
+        mes = MES_NUM.get(m.group(1).lower())
+        if mes:
+            return datetime.date(int(m.group(2)), mes, 1)
+    return fallback
+
+
+def extraer_sis(texto):
+    """Tasa del SIS, en porcentaje.
+
+    CUIDADO: el PDF de Previred trae tambien la cotizacion de Trabajo
+    Pesado (2%) y Trabajo Menos Pesado (1%), que NO son el SIS. Por eso
+    todos los patrones se anclan en 'Invalidez y Sobrevivencia' o en la
+    sigla SIS, y jamas en un porcentaje suelto."""
+    patrones = [
+        # "Nueva Tasa del Seguro de Invalidez y Sobrevivencia (SIS)
+        #  Remuneraciones Julio: 2,00%"  <- formato real de Previred
+        r"Invalidez\s+y\s+Sobrevivencia\s*\(?\s*SIS\s*\)?[^%\d]{0,70}?([\d.,]+)\s*%",
+        r"Invalidez\s+y\s+Sobrevivencia\s*\(?\s*SIS\s*\)?\s*:?\s*([\d.,]+)\s*%",
+        r"Tasa\s+del\s+Seguro\s+de\s+Invalidez\s+y\s+Sobrevivencia[^\d%]{0,40}?([\d.,]+)\s*%",
+        r"Tasa\s+SIS\s*:?\s*([\d.,]+)\s*%",
+        r"\bSIS\b[^\d%\n]{0,30}?([\d.,]+)\s*%",
+        # Formato de tabla: el valor puede quedar unas lineas mas abajo
+        r"Invalidez\s+y\s+Sobrevivencia[^%]{0,150}?([\d,]{3,5})\s*%",
+    ]
+    for p in patrones:
+        m = re.search(p, texto, re.I | re.S)
+        if m:
+            v = a_uf(m.group(1))
+            if v and LIMITES["sis"][0] <= v <= LIMITES["sis"][1]:
+                return v
+    return None
+
+
 def extraer_vigencia(texto, fallback):
     """Busca 'aplican desde las remuneraciones <mes> <anio>'.
 
@@ -265,6 +308,22 @@ def verificar_imm(texto, valor, anterior):
     return fallas
 
 
+def verificar_sis(valor, anterior):
+    """El SIS sube y baja segun la licitacion publica.
+
+    Historial reciente: 1,54% (ene-2026) -> 1,62% (abr-2026) -> 2,00% (jul-2026).
+    Los saltos pueden ser de varias decimas, asi que el control es amplio.
+
+    NO se descarta ningun valor puntual por sospecha de ser otra cosa: la
+    proteccion contra confundirlo con la cotizacion de Trabajo Pesado (2%)
+    esta en los patrones de extraer_sis(), que se anclan siempre en
+    'Invalidez y Sobrevivencia' o en la sigla SIS."""
+    fallas = []
+    if anterior and abs(valor - anterior) > 1.5:
+        fallas.append(f"salto excesivo del SIS: {anterior}% -> {valor}%")
+    return fallas
+
+
 def verificar_tope(nombre, valor, anterior, subida_max=1.20):
     """Los topes imponibles suben cada año; nunca bajan."""
     fallas = []
@@ -307,16 +366,18 @@ def main():
     imm_pdf = extraer_imm(texto)
     afp_pdf = extraer_tope_afp(texto)
     afc_pdf = extraer_tope_afc(texto)
+    sis_pdf = extraer_sis(texto)
 
     anuncia = pdf_anuncia_cambio(texto)
 
     log(f"  IMM leido      : {imm_pdf}")
     log(f"  Tope AFP leido : {afp_pdf}")
     log(f"  Tope AFC leido : {afc_pdf}")
+    log(f"  Tasa SIS leida : {sis_pdf}")
     log(f"  Anuncia cambio : {'SI' if anuncia else 'no'}")
 
-    if afp_pdf is None and afc_pdf is None:
-        log("ERROR: no se pudieron leer los topes imponibles.")
+    if afp_pdf is None and afc_pdf is None and sis_pdf is None:
+        log("ERROR: no se pudieron leer los topes imponibles ni el SIS.")
         log("       El PDF cambio de formato. Revisar el script.")
         return 3
 
@@ -380,6 +441,23 @@ def main():
                 p["tope_afc_uf"].append({"desde": d.isoformat(), "valor": afc_pdf})
                 p["tope_afc_uf"].sort(key=lambda e: e["desde"])
                 cambios.append(f"Tope cesantia: {afc_actual} -> {afc_pdf} UF desde {d}")
+
+    # ── Tasa SIS ─────────────────────────────────────────────────────
+    # A diferencia del IMM, el SIS cambia varias veces al año y rige
+    # desde el mes de la remuneracion, no desde una fecha de ley.
+    if sis_pdf is not None:
+        p.setdefault("sis", [])
+        sis_actual = vigente(p["sis"], "valor") if p["sis"] else None
+        if sis_pdf != sis_actual:
+            fallas = verificar_sis(sis_pdf, sis_actual)
+            if fallas:
+                rechazos.append("; ".join(fallas))
+            else:
+                d = mes_remuneraciones(texto, desde)
+                if not any(e["desde"] == d.isoformat() for e in p["sis"]):
+                    p["sis"].append({"desde": d.isoformat(), "valor": sis_pdf})
+                    p["sis"].sort(key=lambda e: e["desde"])
+                    cambios.append(f"Tasa SIS: {sis_actual}% -> {sis_pdf}% desde {d}")
 
     # Si algo no paso las verificaciones, NO se publica nada y se avisa
     if rechazos:
