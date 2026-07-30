@@ -267,19 +267,33 @@ def extraer_afc(texto):
 
     Si ninguna combinacion los cumple, se devuelve None y no se toca nada.
     """
-    # 1) Aislar la zona del AFC
-    zona = None
-    for patron in (r"Seguro\s+de\s+Cesant[ií]a(.{0,600})",
-                   r"afc\.cl(.{0,400})",
-                   r"Tipo\s+de\s+Contrato(.{0,600})"):
-        m = re.search(patron, texto, re.I | re.S)
-        if m:
-            zona = m.group(1)
-            break
-    if not zona:
-        return None
+    # 1) Zonas donde buscar, de la mas acotada a la mas amplia.
+    #    En el PDF de julio 2026 los porcentajes salen ANTES del texto
+    #    "afc.cl", asi que no basta mirar hacia adelante.
+    zonas = []
+    m = re.search(r"Seguro\s+de\s+Cesant[ií]a(.{0,800})", texto, re.I | re.S)
+    if m:
+        zonas.append(m.group(1))
+    m = re.search(r"afc\.cl", texto, re.I)
+    if m:
+        # ventana a ambos lados del ancla
+        zonas.append(texto[max(0, m.start() - 700): m.end() + 200])
+    m = re.search(r"Tipo\s+de\s+Contrato(.{0,800})", texto, re.I | re.S)
+    if m:
+        zonas.append(m.group(1))
+    # Ultimo recurso: todo el documento. Es seguro porque lo que protege
+    # no es la zona sino el invariante legal que se valida mas abajo.
+    zonas.append(texto)
 
-    # 2) Recoger los porcentajes con un decimal, que es el formato del AFC
+    for zona in zonas:
+        r = _combinacion_afc(zona)
+        if r:
+            return r
+    return None
+
+
+def _combinacion_afc(zona):
+    """Busca en un texto la combinacion de tasas que cumple la Ley 19.728."""
     crudos = re.findall(r"(\d{1,2}[.,]\d{1,2})\s*%", zona)
     valores = []
     for x in crudos:
@@ -309,10 +323,18 @@ def extraer_afc(texto):
     if not any(abs(v - 3.0) < 0.001 for v in valores):
         return None
 
-    # 5) Tasa del Fondo Solidario sobre 11 anios
+    # 5) Tasa del Fondo Solidario sobre 11 anios.
+    #    Tiene que quedar ENTRE el aporte del trabajador y el del
+    #    empleador (0,6 < 0,8 < 2,4). Ese rango descarta la comision de
+    #    AFP (0,1%), que si no se colaria cuando se busca en todo el PDF.
+    #    Ademas se limita a 1,5% como maximo: el aporte al Fondo Solidario
+    #    ha sido 0,8% desde 2002 y un valor mas alto seria implausible.
+    #    Si no aparece nada plausible se devuelve None y NO se toca la
+    #    tabla: es mejor quedarse con el valor conocido que publicar uno
+    #    tomado de otra parte del PDF.
     sobre11 = None
     for v in sorted(presentes):
-        if 0.1 <= v <= 2.0 and abs(v - par[1]) > 0.001 and abs(v - par[0]) > 0.001:
+        if par[1] < v < par[0] and v <= 1.5:
             sobre11 = v
             break
     if sobre11 is None:
@@ -463,7 +485,7 @@ def main():
     afp_pdf = extraer_tope_afp(texto)
     afc_pdf = extraer_tope_afc(texto)
     sis_pdf = extraer_sis(texto)
-    afc_pdf = extraer_afc(texto)
+    afc_tasas = extraer_afc(texto)   # OJO: distinto de afc_pdf (que es el tope en UF)
 
     anuncia = pdf_anuncia_cambio(texto)
 
@@ -471,11 +493,11 @@ def main():
     log(f"  Tope AFP leido : {afp_pdf}")
     log(f"  Tope AFC leido : {afc_pdf}")
     log(f"  Tasa SIS leida : {sis_pdf}")
-    if afc_pdf:
-        log(f"  AFC leido      : indefinido {afc_pdf['indefinido_empleador']}% + "
-            f"{afc_pdf['indefinido_trabajador']}%  |  plazo fijo "
-            f"{afc_pdf['plazo_fijo_empleador']}%  |  11+ anios "
-            f"{afc_pdf['sobre_11_anios_empleador']}%")
+    if afc_tasas:
+        log(f"  AFC leido      : indefinido {afc_tasas['indefinido_empleador']}% + "
+            f"{afc_tasas['indefinido_trabajador']}%  |  plazo fijo "
+            f"{afc_tasas['plazo_fijo_empleador']}%  |  11+ anios "
+            f"{afc_tasas['sobre_11_anios_empleador']}%")
     else:
         log("  AFC leido      : no legible (se mantiene la tabla actual)")
     log(f"  Anuncia cambio : {'SI' if anuncia else 'no'}")
@@ -567,15 +589,15 @@ def main():
     # Estas tasas las fija la Ley 19.728 y no cambian desde 2002, asi que
     # normalmente esto solo CONFIRMA que siguen iguales. Si algun dia
     # cambiaran, se detecta.
-    if afc_pdf:
+    if afc_tasas:
         actual = (p.get("afc") or [{}])[-1]
         distinto = any(
-            abs(afc_pdf[k] - float(actual.get(k, -1))) > 0.001
+            abs(afc_tasas[k] - float(actual.get(k, -1))) > 0.001
             for k in ("indefinido_empleador", "indefinido_trabajador",
                       "plazo_fijo_empleador", "sobre_11_anios_empleador")
         )
         if distinto:
-            fallas = verificar_afc(afc_pdf, actual)
+            fallas = verificar_afc(afc_tasas, actual)
             if fallas:
                 rechazos.append("AFC: " + "; ".join(fallas))
             else:
@@ -583,14 +605,14 @@ def main():
                 p.setdefault("afc", [])
                 if not any(e.get("desde") == d.isoformat() for e in p["afc"]):
                     entrada = {"desde": d.isoformat()}
-                    entrada.update(afc_pdf)
+                    entrada.update(afc_tasas)
                     p["afc"].append(entrada)
                     p["afc"].sort(key=lambda e: e["desde"])
                     cambios.append(
-                        f"AFC: indefinido {afc_pdf['indefinido_empleador']}%+"
-                        f"{afc_pdf['indefinido_trabajador']}%, plazo fijo "
-                        f"{afc_pdf['plazo_fijo_empleador']}%, 11+ anios "
-                        f"{afc_pdf['sobre_11_anios_empleador']}% desde {d}")
+                        f"AFC: indefinido {afc_tasas['indefinido_empleador']}%+"
+                        f"{afc_tasas['indefinido_trabajador']}%, plazo fijo "
+                        f"{afc_tasas['plazo_fijo_empleador']}%, 11+ anios "
+                        f"{afc_tasas['sobre_11_anios_empleador']}% desde {d}")
         else:
             log("  AFC: confirmado igual a lo que ya estaba publicado.")
 
