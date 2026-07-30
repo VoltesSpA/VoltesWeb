@@ -1,6 +1,6 @@
 {
   "_comentario": "Parametros legales de nomina de Chile. Al publicar este archivo, todas las instalaciones de Voltes ERP se actualizan solas dentro de las 24 horas siguientes. Suba la 'version' en cada cambio.",
-  "version": 2,
+  "version": 3,
   "actualizado": "2026-07-29",
   "_aviso": "Mensaje opcional que se muestra a TODAS las instalaciones en Configuracion. Dejar en blanco si no hay nada que comunicar.",
   "aviso": "",
@@ -116,6 +116,18 @@
     {
       "desde": "2026-07-01",
       "valor": 2.0
+    }
+  ],
+  "_afc": "Seguro de Cesantia (Ley 19.728). Los porcentajes estan fijados por ley y no cambian desde 2002, pero se dejan en tabla por si acaso. Invariante legal: indefinido_empleador + indefinido_trabajador = 3,0. Sobre 11 anios de relacion laboral el empleador solo aporta 0,8% al Fondo de Cesantia Solidario y el trabajador deja de cotizar.",
+  "afc": [
+    {
+      "desde": "2002-10-01",
+      "indefinido_empleador": 2.4,
+      "indefinido_trabajador": 0.6,
+      "plazo_fijo_empleador": 3.0,
+      "plazo_fijo_trabajador": 0.0,
+      "sobre_11_anios_empleador": 0.8,
+      "sobre_11_anios_trabajador": 0.0
     }
   ]
 }
