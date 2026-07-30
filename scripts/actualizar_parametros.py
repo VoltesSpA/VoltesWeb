@@ -249,6 +249,102 @@ def extraer_sis(texto):
     return None
 
 
+def extraer_afc(texto):
+    """Lee las tasas del seguro de cesantia del PDF de Previred.
+
+    El PDF las muestra en una tabla apretada, del estilo:
+        4,2% R.I.  2,8% R.I.  Empleador  Trabajador
+        2,4% R.I.  0,6% R.I.  3,0% R.I.  -  0,8% R.I.  -  4%
+
+    Ahi no hay etiquetas confiables por columna, asi que NO se confia en
+    las posiciones. La estrategia es distinta: se recogen todos los
+    porcentajes de la zona del AFC y se busca la combinacion que cumple
+    los invariantes que la Ley 19.728 garantiza:
+
+        indefinido_empleador + indefinido_trabajador = 3,0
+        plazo_fijo_empleador = 3,0
+        sobre_11_anios entre 0,1 y 2,0
+
+    Si ninguna combinacion los cumple, se devuelve None y no se toca nada.
+    """
+    # 1) Aislar la zona del AFC
+    zona = None
+    for patron in (r"Seguro\s+de\s+Cesant[ií]a(.{0,600})",
+                   r"afc\.cl(.{0,400})",
+                   r"Tipo\s+de\s+Contrato(.{0,600})"):
+        m = re.search(patron, texto, re.I | re.S)
+        if m:
+            zona = m.group(1)
+            break
+    if not zona:
+        return None
+
+    # 2) Recoger los porcentajes con un decimal, que es el formato del AFC
+    crudos = re.findall(r"(\d{1,2}[.,]\d{1,2})\s*%", zona)
+    valores = []
+    for x in crudos:
+        v = a_uf(x)
+        if v is not None and 0.05 <= v <= 6.0:
+            valores.append(round(v, 2))
+    if len(valores) < 3:
+        return None
+
+    presentes = set(valores)
+
+    # 3) Buscar el par indefinido que sume 3,0 exacto
+    par = None
+    for emp in sorted(presentes, reverse=True):
+        for trab in sorted(presentes):
+            if trab >= emp:
+                continue
+            if abs((emp + trab) - 3.0) < 0.001:
+                par = (emp, trab)
+                break
+        if par:
+            break
+    if not par:
+        return None
+
+    # 4) Plazo fijo debe ser 3,0 y tiene que aparecer en el PDF
+    if not any(abs(v - 3.0) < 0.001 for v in valores):
+        return None
+
+    # 5) Tasa del Fondo Solidario sobre 11 anios
+    sobre11 = None
+    for v in sorted(presentes):
+        if 0.1 <= v <= 2.0 and abs(v - par[1]) > 0.001 and abs(v - par[0]) > 0.001:
+            sobre11 = v
+            break
+    if sobre11 is None:
+        return None
+
+    return {
+        "indefinido_empleador": par[0],
+        "indefinido_trabajador": par[1],
+        "plazo_fijo_empleador": 3.0,
+        "plazo_fijo_trabajador": 0.0,
+        "sobre_11_anios_empleador": sobre11,
+        "sobre_11_anios_trabajador": 0.0,
+    }
+
+
+def verificar_afc(nuevo, anterior):
+    """Los invariantes de la Ley 19.728 deben cumplirse siempre."""
+    fallas = []
+    ie = nuevo["indefinido_empleador"]
+    it = nuevo["indefinido_trabajador"]
+
+    if abs((ie + it) - 3.0) > 0.001:
+        fallas.append(f"invariante roto: {ie} + {it} = {round(ie+it,2)}, deberia ser 3,0")
+    if abs(nuevo["plazo_fijo_empleador"] - 3.0) > 0.001:
+        fallas.append(f"plazo fijo deberia ser 3,0 y salio {nuevo['plazo_fijo_empleador']}")
+    if ie <= it:
+        fallas.append(f"el empleador ({ie}) no puede aportar menos que el trabajador ({it})")
+    if not (0.1 <= nuevo["sobre_11_anios_empleador"] <= 2.0):
+        fallas.append(f"tasa sobre 11 anios fuera de rango: {nuevo['sobre_11_anios_empleador']}")
+    return fallas
+
+
 def extraer_vigencia(texto, fallback):
     """Busca 'aplican desde las remuneraciones <mes> <anio>'.
 
@@ -367,6 +463,7 @@ def main():
     afp_pdf = extraer_tope_afp(texto)
     afc_pdf = extraer_tope_afc(texto)
     sis_pdf = extraer_sis(texto)
+    afc_pdf = extraer_afc(texto)
 
     anuncia = pdf_anuncia_cambio(texto)
 
@@ -374,6 +471,13 @@ def main():
     log(f"  Tope AFP leido : {afp_pdf}")
     log(f"  Tope AFC leido : {afc_pdf}")
     log(f"  Tasa SIS leida : {sis_pdf}")
+    if afc_pdf:
+        log(f"  AFC leido      : indefinido {afc_pdf['indefinido_empleador']}% + "
+            f"{afc_pdf['indefinido_trabajador']}%  |  plazo fijo "
+            f"{afc_pdf['plazo_fijo_empleador']}%  |  11+ anios "
+            f"{afc_pdf['sobre_11_anios_empleador']}%")
+    else:
+        log("  AFC leido      : no legible (se mantiene la tabla actual)")
     log(f"  Anuncia cambio : {'SI' if anuncia else 'no'}")
 
     if afp_pdf is None and afc_pdf is None and sis_pdf is None:
@@ -458,6 +562,37 @@ def main():
                     p["sis"].append({"desde": d.isoformat(), "valor": sis_pdf})
                     p["sis"].sort(key=lambda e: e["desde"])
                     cambios.append(f"Tasa SIS: {sis_actual}% -> {sis_pdf}% desde {d}")
+
+    # ── Seguro de cesantia (AFC) ─────────────────────────────────────
+    # Estas tasas las fija la Ley 19.728 y no cambian desde 2002, asi que
+    # normalmente esto solo CONFIRMA que siguen iguales. Si algun dia
+    # cambiaran, se detecta.
+    if afc_pdf:
+        actual = (p.get("afc") or [{}])[-1]
+        distinto = any(
+            abs(afc_pdf[k] - float(actual.get(k, -1))) > 0.001
+            for k in ("indefinido_empleador", "indefinido_trabajador",
+                      "plazo_fijo_empleador", "sobre_11_anios_empleador")
+        )
+        if distinto:
+            fallas = verificar_afc(afc_pdf, actual)
+            if fallas:
+                rechazos.append("AFC: " + "; ".join(fallas))
+            else:
+                d = datetime.date(desde.year, desde.month, 1)
+                p.setdefault("afc", [])
+                if not any(e.get("desde") == d.isoformat() for e in p["afc"]):
+                    entrada = {"desde": d.isoformat()}
+                    entrada.update(afc_pdf)
+                    p["afc"].append(entrada)
+                    p["afc"].sort(key=lambda e: e["desde"])
+                    cambios.append(
+                        f"AFC: indefinido {afc_pdf['indefinido_empleador']}%+"
+                        f"{afc_pdf['indefinido_trabajador']}%, plazo fijo "
+                        f"{afc_pdf['plazo_fijo_empleador']}%, 11+ anios "
+                        f"{afc_pdf['sobre_11_anios_empleador']}% desde {d}")
+        else:
+            log("  AFC: confirmado igual a lo que ya estaba publicado.")
 
     # Si algo no paso las verificaciones, NO se publica nada y se avisa
     if rechazos:
