@@ -65,39 +65,63 @@ def urls_candidatas(anio, mes):
 
 
 def descargar(url):
+    """Descarga una URL y devuelve el contenido SOLO si es un PDF de verdad.
+
+    El sitio de Previred responde 200 con una pagina HTML de "no encontrado"
+    cuando la URL no existe. Si no se filtra aqui, cada URL fallida termina
+    en pdfplumber, que escupe 'invalid pdf header' y llena el registro de
+    ruido. Un PDF siempre empieza con la firma %PDF-."""
     req = urllib.request.Request(url, headers={
         "User-Agent": "Mozilla/5.0 (compatible; VoltesBot/1.0)"})
     with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
         if r.status != 200:
             return None
-        return r.read()
+        datos = r.read()
+
+    if not datos or not datos.lstrip()[:5].startswith(b"%PDF-"):
+        return None          # es HTML u otra cosa, no un PDF
+    return datos
 
 
 def texto_del_pdf(datos):
+    """Extrae el texto de un PDF. Silencioso: los avisos internos de
+    pdfplumber y pypdf no aportan nada al registro."""
+    import logging
+    for nombre in ("pdfminer", "pdfplumber", "pypdf", "PyPDF2"):
+        logging.getLogger(nombre).setLevel(logging.CRITICAL)
+
     try:
         import pdfplumber
         with pdfplumber.open(io.BytesIO(datos)) as pdf:
-            return "\n".join((p.extract_text() or "") for p in pdf.pages)
+            texto = "\n".join((p.extract_text() or "") for p in pdf.pages)
+        if texto.strip():
+            return texto
     except Exception:
         pass
+
     try:
         from pypdf import PdfReader
         lector = PdfReader(io.BytesIO(datos))
         return "\n".join((p.extract_text() or "") for p in lector.pages)
-    except Exception as e:
-        log(f"  No se pudo leer el PDF: {e}")
+    except Exception:
         return ""
 
 
 def obtener_texto_previred():
-    """Busca el PDF del mes actual; si no esta, prueba el mes anterior."""
+    """Busca el PDF del mes actual; si no esta, prueba el mes anterior.
+
+    Previred no usa un nombre de archivo constante, asi que se prueban
+    varias combinaciones. Las que no existen se descartan en silencio:
+    solo se informa cuantas se probaron antes de dar con la buena."""
     hoy = datetime.date.today()
     intentos = [(hoy.year, hoy.month)]
     prev = hoy.replace(day=1) - datetime.timedelta(days=1)
     intentos.append((prev.year, prev.month))
 
+    probadas = 0
     for anio, mes in intentos:
         for url in urls_candidatas(anio, mes):
+            probadas += 1
             try:
                 datos = descargar(url)
             except Exception:
@@ -106,8 +130,11 @@ def obtener_texto_previred():
                 continue
             texto = texto_del_pdf(datos)
             if texto and "Indicadores Previsionales" in texto:
-                log(f"  PDF encontrado: {url}")
+                log(f"  PDF encontrado tras {probadas} intentos:")
+                log(f"    {url}")
                 return texto, url, datetime.date(anio, mes, 1)
+
+    log(f"  Se probaron {probadas} direcciones y ninguna devolvio un PDF valido.")
     return "", "", None
 
 
