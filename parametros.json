@@ -1,7 +1,8 @@
 {
   "_comentario": "Parametros legales de nomina de Chile. Al publicar este archivo, todas las instalaciones de Voltes ERP se actualizan solas dentro de las 24 horas siguientes. Suba la 'version' en cada cambio.",
-  "version": 3,
-  "actualizado": "2026-07-29",
+  "version": 4,
+  "_actualizado": "Fecha en que cambio el CONTENIDO de este archivo, no la fecha en que el ERP lo consulto. El workflow la pone sola cuando detecta un cambio en Previred; si se edita a mano, hay que actualizarla junto con la version.",
+  "actualizado": "2026-08-05",
   "_aviso": "Mensaje opcional que se muestra a TODAS las instalaciones en Configuracion. Dejar en blanco si no hay nada que comunicar.",
   "aviso": "",
   "_imm": "Ingreso Minimo Mensual. Lo fija el Congreso por ley. 'desde' es la fecha en que EMPIEZA A REGIR, no la de publicacion de la ley.",
@@ -116,6 +117,49 @@
     {
       "desde": "2026-07-01",
       "valor": 2.0
+    }
+  ],
+  "_retencion_honorarios": "Retencion de segunda categoria de las boletas de honorarios (Art. 74 N°2 LIR). La Ley 21.133 fijo un alza gradual desde 10% en 2019 hasta 17% en 2028, para financiar las cotizaciones previsionales de los trabajadores independientes. La tasa rige por AÑO CALENDARIO completo, no por mes. Las tasas hasta 2028 ya estan cargadas: el sistema cambia solo cada 1 de enero sin que nadie tenga que hacer nada.",
+  "retencion_honorarios": [
+    {
+      "desde": "2019-01-01",
+      "valor": 10.0
+    },
+    {
+      "desde": "2020-01-01",
+      "valor": 10.75
+    },
+    {
+      "desde": "2021-01-01",
+      "valor": 11.5
+    },
+    {
+      "desde": "2022-01-01",
+      "valor": 12.25
+    },
+    {
+      "desde": "2023-01-01",
+      "valor": 13.0
+    },
+    {
+      "desde": "2024-01-01",
+      "valor": 13.75
+    },
+    {
+      "desde": "2025-01-01",
+      "valor": 14.5
+    },
+    {
+      "desde": "2026-01-01",
+      "valor": 15.25
+    },
+    {
+      "desde": "2027-01-01",
+      "valor": 16.0
+    },
+    {
+      "desde": "2028-01-01",
+      "valor": 17.0
     }
   ],
   "_afc": "Seguro de Cesantia (Ley 19.728). Los porcentajes estan fijados por ley y no cambian desde 2002, pero se dejan en tabla por si acaso. Invariante legal: indefinido_empleador + indefinido_trabajador = 3,0. Sobre 11 anios de relacion laboral el empleador solo aporta 0,8% al Fondo de Cesantia Solidario y el trabajador deja de cotizar.",
