@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Política de Privacidad | Montajes y Construcción Voltes SpA</title>
+
+    <meta name="description" content="Política de privacidad y tratamiento de datos personales de Montajes y Construcción Voltes SpA, conforme a la Ley 19.628 modificada por la Ley 21.719.">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://voltesspa.cl/privacidad.html">
+
+    <meta property="og:title" content="Política de Privacidad | Voltes SpA">
+    <meta property="og:description" content="Cómo tratamos los datos personales que recibimos a través de voltesspa.cl.">
+    <meta property="og:url" content="https://voltesspa.cl/privacidad.html">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="es_CL">
+
+    <link rel="icon" type="image/png" href="VOLTES_logo_alta_resolucion.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --primary: #f2ba13;
+            --primary-hover: #d9a40b;
+            --dark-main: #14171a;
+            --light-bg: #f8f9fa;
+            --white: #ffffff;
+            --text-dark: #1c1f22;
+            --text-muted: #5a626a;
+            --font-main: 'Montserrat', sans-serif;
+            --transition: all 0.3s ease;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-main);
+            color: var(--text-dark);
+            background-color: var(--white);
+            line-height: 1.75;
+        }
+
+        .container { max-width: 900px; margin: 0 auto; padding: 0 20px; }
+
+        /* Barra superior */
+        .topbar {
+            background-color: var(--white);
+            border-bottom: 1px solid #e6e8eb;
+            padding: 15px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .topbar .container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+        }
+        .topbar img { height: 55px; width: auto; }
+        .topbar a.volver {
+            text-decoration: none;
+            color: var(--text-dark);
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: var(--transition);
+        }
+        .topbar a.volver:hover { color: var(--primary-hover); }
+
+        /* Encabezado */
+        .cabecera {
+            background-color: var(--light-bg);
+            padding: 55px 0 45px;
+            border-bottom: 4px solid var(--primary);
+        }
+        .cabecera h1 { font-size: 2.1rem; font-weight: 800; margin-bottom: 10px; }
+        .cabecera .meta { color: var(--text-muted); font-size: 0.88rem; }
+
+        /* Cuerpo */
+        .documento { padding: 50px 0 70px; }
+        .documento h2 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin: 38px 0 14px;
+            padding-left: 14px;
+            border-left: 4px solid var(--primary);
+        }
+        .documento h2:first-of-type { margin-top: 0; }
+        .documento p { margin-bottom: 14px; color: var(--text-dark); }
+        .documento ul { margin: 0 0 16px 22px; }
+        .documento li { margin-bottom: 9px; }
+        .documento strong { font-weight: 700; }
+        .documento a { color: var(--primary-hover); font-weight: 600; }
+
+        .datos-tabla {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 8px 0 20px;
+            font-size: 0.94rem;
+        }
+        .datos-tabla th, .datos-tabla td {
+            text-align: left;
+            padding: 11px 14px;
+            border-bottom: 1px solid #e6e8eb;
+            vertical-align: top;
+        }
+        .datos-tabla th {
+            background-color: var(--light-bg);
+            font-weight: 700;
+            width: 32%;
+        }
+
+        .documento .intro {
+            font-size: 1.06rem;
+            line-height: 1.8;
+            margin-bottom: 18px;
+        }
+
+        .aviso {
+            background-color: var(--light-bg);
+            border-left: 4px solid var(--primary);
+            padding: 18px 22px;
+            margin: 28px 0;
+            font-size: 0.93rem;
+            color: var(--text-muted);
+        }
+
+        .footer {
+            background-color: var(--dark-main);
+            color: rgba(255,255,255,0.7);
+            padding: 32px 0;
+            text-align: center;
+            font-size: 0.86rem;
+        }
+        .footer a { color: var(--primary); text-decoration: none; font-weight: 600; }
+
+        @media (max-width: 768px) {
+            .cabecera h1 { font-size: 1.6rem; }
+            .datos-tabla th { width: auto; }
+            .datos-tabla, .datos-tabla tbody, .datos-tabla tr, .datos-tabla th, .datos-tabla td {
+                display: block; width: 100%;
+            }
+            .datos-tabla td { padding-top: 0; border-bottom: none; }
+            .datos-tabla tr { border-bottom: 1px solid #e6e8eb; padding: 6px 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="topbar">
+        <div class="container">
+            <img src="VOLTES_logo_alta_resolucion.png" alt="Montajes y Construcción Voltes SpA">
+            <a href="/" class="volver"><i class="fa-solid fa-arrow-left"></i> Volver al sitio</a>
+        </div>
+    </div>
+
+    <div class="cabecera">
+        <div class="container">
+            <h1>Política de Privacidad y Tratamiento de Datos Personales</h1>
+            <p class="meta">Montajes y Construcción Voltes SpA
+               &nbsp;·&nbsp; Última actualización: 6 de agosto de 2026</p>
+        </div>
+    </div>
+
+    <div class="documento">
+        <div class="container">
+
+            <p class="intro">Montajes y Construcción Voltes SpA se compromete a actuar
+               conforme a la normativa vigente en materia de protección de datos y a
+               resguardar la identidad e información de quienes nos contactan.</p>
+
+            <p class="intro">Solicitamos información a través del formulario de nuestro
+               sitio web con un solo propósito: <strong>responder su consulta y elaborar la
+               cotización que necesita</strong>. En ningún caso vendemos, arrendamos ni
+               entregamos esa información a terceros con fines comerciales.</p>
+
+            <p>A continuación explicamos en detalle cómo lo hacemos.</p>
+
+            <h2>1. Quién trata sus datos</h2>
+            <p>El responsable es <strong>Montajes y Construcción Voltes SpA</strong>, con
+               domicilio en Coquimbo, Región de Coquimbo, Chile.</p>
+            <p>Para cualquier consulta sobre esta política o sobre sus datos, escríbanos a
+               <strong>voltes.spa@gmail.com</strong>.</p>
+
+            <h2>2. Qué datos recibimos</h2>
+            <p>Únicamente los que usted nos entrega al completar el formulario de contacto:</p>
+            <ul>
+                <li>Nombre o razón social</li>
+                <li>Correo electrónico</li>
+                <li>Teléfono</li>
+                <li>Tipo de servicio requerido</li>
+                <li>El mensaje que usted escriba</li>
+            </ul>
+            <p>No pedimos datos sensibles ni información bancaria a través del sitio.</p>
+
+            <h2>3. Para qué los usamos</h2>
+            <ul>
+                <li>Responder su consulta y mantener el contacto asociado a ella.</li>
+                <li>Elaborar y enviarle una cotización o propuesta técnica.</li>
+                <li>Ejecutar los servicios, si la consulta deriva en un trabajo contratado.</li>
+            </ul>
+            <p>No los usamos para publicidad ni campañas de correo.</p>
+
+            <h2>4. En qué nos basamos para tratarlos</h2>
+            <p>El tratamiento se funda en el <strong>consentimiento</strong> que usted otorga
+               al enviar el formulario de contacto, y en las gestiones necesarias para
+               responder su solicitud.</p>
+            <p>Al presionar <strong>Enviar mensaje</strong> usted declara haber leído esta
+               política y aceptar que tratemos sus datos para los fines aquí descritos. Puede
+               retirar ese consentimiento cuando quiera escribiéndonos; el retiro no afecta lo
+               ya realizado antes de su solicitud.</p>
+
+            <h2>5. Quién más interviene</h2>
+            <p>Para que el sitio funcione utilizamos dos servicios externos que, por su
+               naturaleza, procesan cierta información:</p>
+            <ul>
+                <li><strong>Formspree</strong>, que recibe el formulario y nos lo reenvía por
+                    correo. Opera desde Estados Unidos.</li>
+                <li><strong>GitHub Pages y Cloudflare</strong>, que alojan y distribuyen el
+                    sitio, y registran datos técnicos como la dirección IP por seguridad.</li>
+            </ul>
+            <p>Actúan por encargo nuestro y no pueden usar sus datos para fines propios. Al
+               ser servicios internacionales, la información puede procesarse fuera de Chile.</p>
+
+            <h2>6. Cuánto tiempo los guardamos</h2>
+            <p>Si la consulta <strong>no deriva en un trabajo</strong>, hasta 12 meses desde el
+               último contacto. Si <strong>sí deriva en un servicio contratado</strong>,
+               mientras dure la relación comercial y luego por los plazos que exigen las
+               obligaciones legales, tributarias y de garantía. Cumplidos esos plazos, los
+               datos se eliminan.</p>
+
+            <h2>7. Sus derechos</h2>
+            <p>Usted puede en cualquier momento <strong>acceder</strong> a sus datos,
+               <strong>rectificarlos</strong> si están errados, pedir su
+               <strong>eliminación</strong>, <strong>oponerse</strong> a un uso determinado,
+               solicitar su <strong>portabilidad</strong> o pedir el <strong>bloqueo</strong>
+               temporal del tratamiento.</p>
+            <p>Basta con escribir a <strong>voltes.spa@gmail.com</strong> indicando su nombre
+               y qué desea. Responderemos dentro de los plazos legales. Si considera que su
+               solicitud no fue bien atendida, puede reclamar ante la Agencia de Protección de
+               Datos Personales.</p>
+
+            <h2>8. Seguridad y cookies</h2>
+            <p>El sitio opera bajo conexión cifrada (HTTPS) y aplicamos medidas razonables
+               para proteger la información. Si ocurriera una vulneración que afecte sus
+               datos, se lo comunicaremos y daremos aviso a la autoridad.</p>
+            <p>Este sitio <strong>no utiliza cookies de publicidad ni de seguimiento</strong>.
+               Si en el futuro incorporamos herramientas de análisis, se lo advertiremos y le
+               pediremos su autorización antes.</p>
+
+            <h2>9. Cambios a esta política</h2>
+            <p>Si la modificamos, publicaremos la nueva versión en esta misma página con su
+               fecha de actualización.</p>
+
+            <div class="aviso">
+                <strong>Nota.</strong> Este documento describe el funcionamiento real de este
+                sitio y las exigencias generales de la Ley 19.628, modificada por la Ley
+                21.719. No constituye asesoría legal; si necesita certeza jurídica sobre su
+                caso, conviene que lo revise un abogado.
+            </div>
+
+        </div>
+    </div>
+
+    <div class="footer">
+        <div class="container">
+            &copy; 2026 Montajes y Construcción Voltes SpA. Todos los derechos reservados.
+            &nbsp;·&nbsp; <a href="/">Volver al sitio</a>
+        </div>
+    </div>
+
+</body>
+</html>
