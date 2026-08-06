@@ -1,0 +1,21 @@
+# ═══════════════════════════════════════════════════════════════
+#  Instrucciones para los buscadores
+#
+#  Ruta: robots.txt (raiz del repositorio, junto a index.html)
+# ═══════════════════════════════════════════════════════════════
+
+# Todo el sitio se puede indexar
+User-agent: *
+Allow: /
+
+# El archivo de parametros legales alimenta al ERP y a la seccion de
+# indicadores. No aporta nada en los resultados de busqueda, asi que se
+# deja fuera para que Google no lo muestre como si fuera una pagina.
+Disallow: /parametros.json
+
+# Carpetas internas del repositorio
+Disallow: /.github/
+Disallow: /scripts/
+
+# Donde esta el mapa del sitio
+Sitemap: https://voltesspa.cl/sitemap.xml
