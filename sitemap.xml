@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Mapa del sitio para los buscadores.
+
+  Le dice a Google que paginas existen y cada cuanto conviene revisarlas.
+  Como voltesspa.cl es un sitio de una sola pagina, aqui va la raiz y las
+  secciones con ancla, que Google puede mostrar como enlaces directos en
+  los resultados.
+
+  Ruta: sitemap.xml (raiz del repositorio, junto a index.html)
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+  <url>
+    <loc>https://voltesspa.cl/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <url>
+    <loc>https://voltesspa.cl/#servicios</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://voltesspa.cl/#nosotros</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://voltesspa.cl/#indicadores</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://voltesspa.cl/#contacto</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+</urlset>
