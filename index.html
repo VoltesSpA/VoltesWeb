@@ -1207,11 +1207,20 @@
                     set("ind-jornada-det", "Semanales · Ley 21.561");
                 }
 
-                if (p.actualizado) {
-                    const d = new Date(p.actualizado + "T00:00:00");
-                    set("ind-fecha", "Actualizado el " +
-                        d.toLocaleDateString("es-CL", { day: "numeric", month: "long", year: "numeric" }));
-                }
+                // Se muestra la fecha de HOY, no la del archivo.
+                //
+                // Al visitante le importa una sola cosa: si estos valores rigen
+                // hoy. La respuesta siempre es si, porque vigente() elige en cada
+                // carga la entrada cuya fecha de vigencia ya paso.
+                //
+                // La fecha del archivo ("actualizado") dice otra cosa: cuando
+                // cambio su contenido. Puede ser de hace meses y estar perfecta
+                // si ninguna ley se movio, pero leida en la web parecia que la
+                // pagina estuviera desactualizada.
+                const ahora = new Date();
+                set("ind-fecha", "Vigente al " +
+                    ahora.toLocaleDateString("es-CL",
+                        { day: "numeric", month: "long", year: "numeric" }));
             })
             .catch(() => set("ind-fecha", "No se pudieron cargar los parámetros"));
 
