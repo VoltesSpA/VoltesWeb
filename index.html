@@ -46,7 +46,6 @@
       "image": "https://voltesspa.cl/VOLTES_logo_alta_resolucion.png",
       "telephone": "+56988981419",
       "email": "voltes.spa@gmail.com",
-      "taxID": "78.244.818-8",
       "address": {
         "@type": "PostalAddress",
         "addressLocality": "Coquimbo",
@@ -857,6 +856,40 @@
             .indicador-card .ind-valor { font-size: 1.35rem; }
         }
 
+
+        /* --- CASILLA DE CONSENTIMIENTO (Ley 21.719) --- */
+        .consentimiento {
+            display: flex;
+            align-items: flex-start;
+            gap: 11px;
+            margin: 22px 0 20px;
+            padding: 15px 16px;
+            background-color: var(--light-bg);
+            border-radius: 8px;
+            border-left: 3px solid var(--primary);
+        }
+        .consentimiento input[type="checkbox"] {
+            width: 19px;
+            height: 19px;
+            min-width: 19px;
+            margin-top: 2px;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+        .consentimiento label {
+            font-size: 0.87rem;
+            line-height: 1.6;
+            color: var(--text-muted);
+            font-weight: 500;
+            cursor: pointer;
+            margin: 0;
+        }
+        .consentimiento a {
+            color: var(--primary-hover);
+            font-weight: 700;
+            text-decoration: underline;
+        }
+
     </style>
 </head>
 <body>
@@ -1133,6 +1166,20 @@
                             <label for="message">Mensaje / Detalles del Proyecto</label>
                             <textarea id="message" name="Mensaje" class="form-control" placeholder="Describe brevemente los requerimientos técnicos, civiles o eléctricos de la obra..." required></textarea>
                         </div>
+                        <!-- Consentimiento expreso exigido por la Ley 21.719.
+                             Va SIN el atributo "checked": la ley obliga a que el
+                             visitante la marque, no vale venir marcada de fábrica. -->
+                        <div class="consentimiento">
+                            <input type="checkbox" id="consentimiento" name="Consentimiento"
+                                   value="Acepta la politica de privacidad" required>
+                            <label for="consentimiento">
+                                Autorizo a Montajes y Construcción Voltes SpA a tratar mis datos
+                                personales para responder esta consulta y elaborar una cotización,
+                                según su <a href="privacidad.html" target="_blank">Política de
+                                Privacidad</a>.
+                            </label>
+                        </div>
+
                         <button type="submit" class="btn btn-primary" style="width: 100%;">Enviar Mensaje</button>
                         <p id="form-status" style="margin-top: 15px; font-weight: 600; text-align: center; display: none;"></p>
                     </form>
@@ -1159,6 +1206,7 @@
                         <li><a href="#nosotros">Nosotros</a></li>
                         <li><a href="#servicios">Servicios</a></li>
                         <li><a href="#contacto">Contacto</a></li>
+                        <li><a href="privacidad.html">Política de Privacidad</a></li>
                     </ul>
                 </div>
 
