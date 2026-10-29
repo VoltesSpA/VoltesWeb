@@ -1,0 +1,7 @@
+Señal de actividad del workflow de parámetros legales.
+
+Este archivo existe solo para que GitHub no desactive la
+revisión diaria por inactividad. No afecta al sitio web
+ni al ERP.
+
+Última señal: 2026-10-29 17:59 UTC
