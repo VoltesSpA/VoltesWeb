@@ -1,8 +1,8 @@
 {
   "_comentario": "Parametros legales de nomina de Chile. Al publicar este archivo, todas las instalaciones de Voltes ERP se actualizan solas dentro de las 24 horas siguientes. Suba la 'version' en cada cambio.",
-  "version": 5,
+  "version": 6,
   "_actualizado": "Fecha en que cambio el CONTENIDO de este archivo, no la fecha en que el ERP lo consulto. El workflow la pone sola cuando detecta un cambio en Previred; si se edita a mano, hay que actualizarla junto con la version.",
-  "actualizado": "2026-09-14",
+  "actualizado": "2026-11-13",
   "_aviso": "Mensaje opcional que se muestra a TODAS las instalaciones en Configuracion. Dejar en blanco si no hay nada que comunicar.",
   "aviso": "",
   "_imm": "Ingreso Minimo Mensual. Lo fija el Congreso por ley. 'desde' es la fecha en que EMPIEZA A REGIR, no la de publicacion de la ley.",
@@ -121,6 +121,10 @@
     {
       "desde": "2026-09-01",
       "valor": 1.78
+    },
+    {
+      "desde": "2026-11-01",
+      "valor": 1.79
     }
   ],
   "_retencion_honorarios": "Retencion de segunda categoria de las boletas de honorarios (Art. 74 N°2 LIR). La Ley 21.133 fijo un alza gradual desde 10% en 2019 hasta 17% en 2028, para financiar las cotizaciones previsionales de los trabajadores independientes. La tasa rige por AÑO CALENDARIO completo, no por mes. Las tasas hasta 2028 ya estan cargadas: el sistema cambia solo cada 1 de enero sin que nadie tenga que hacer nada.",
